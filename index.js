@@ -15,7 +15,7 @@ const parseWeb = async (url) => {
         const jsonData = JSON.parse(data);
         const jsonConfig = jsonData.props.pageProps.initialData.contentLayout.modules[0].configs;
         const jsonCategories = jsonConfig.categories;
-        const answer = parser.parseJSON(baseUrl, jsonCategories);
+        const answer = await parser.parseJSON(baseUrl, jsonCategories);
         return JSON.stringify(answer);
     } catch (error) {
         console.log(error);
