@@ -1,5 +1,6 @@
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
+const axios = require("axios");
 
 
 const getSubcategories = async(baseUrl, path) => {
@@ -39,13 +40,11 @@ const getSubcategories = async(baseUrl, path) => {
         jsonElement.forEach(element => {
             if (element.configs.NavPills) {
                 const configWithNavPills = element.configs.NavPills;
-                console.log("🚀 ~ file: parser.js:84 ~ getSubcategories ~ configWithNavPills:", configWithNavPills)
                 configWithNavPills.forEach(subcategory => {
                     let Subcategory = {
                         name: subcategory.title,
                         url: baseUrl + subcategory.url.clickThrough.value,
                     };
-                    console.log("🚀 ~ file: parser.js:90 ~ getSubcategories ~ Subcategory:", Subcategory)
                     subcategories.push(Subcategory);
                 });
             }
@@ -74,7 +73,6 @@ const parseJSON = async (baseUrl, data) => {
             const linkSubcategory = elementSubcategory.subCategoryLink;
             const subcategoryName = linkSubcategory.title;
             const subcategoryUrl = linkSubcategory.clickThrough.value;
-            // console.log("🚀 ~ file: parser.js:18 ~ parseJSON ~ subcategoryUrl:", baseUrl + subcategoryUrl)
             const mySubcategories = await getSubcategories(baseUrl, subcategoryUrl);
             let Subcategory = {
                 name: subcategoryName,
@@ -90,4 +88,85 @@ const parseJSON = async (baseUrl, data) => {
     return myResponse;
 };
 
-module.exports = { parseJSON }
+const parseJumbo = async(url) => {
+    try {
+        const response = await axios.get(url);
+        const html = response.data;
+        $ = cheerio.load(html);
+        let myFistDiv;
+        let mySecondDiv;
+        let myThridDiv;
+        let myFourDiv;
+        let myFiveDiv;
+        let finalItems = [];
+
+        $('div').each(function(i, elem) {
+            const classDiv = String($(this).attr('class'));
+            if (classDiv.includes('render-container')) {
+                myFistDiv = $(this).html();
+                $ = cheerio.load(myFistDiv);
+
+                $('div').each(function(i, elem) {
+                    const classDiv = $(this).attr('class');
+                    if (classDiv === 'render-provider') {
+                        mySecondDiv = $(this).html();
+                        $ = cheerio.load(mySecondDiv);
+
+                        $('div').each(function(i, elem) {
+                            const classDiv = $(this).attr('class');
+                            if (classDiv === 'vtex-store__template bg-base') {
+                                myThridDiv = $(this).html();
+                                $ = cheerio.load(myThridDiv);
+        
+                                $('div').each(function(i, elem) {
+                                    const classDiv = $(this).attr('class');
+                                    if (classDiv === 'flex flex-column min-vh-100 w-100') {
+                                        myFourDiv = $(this).html();
+                                        $ = cheerio.load(myFourDiv);
+                                        $('script').each(function(i, elem) {
+                                            const typeScript = $(this).attr('type');
+                                            if (typeScript === 'application/ld+json') {
+                                                myFiveDiv = $(this).html();
+                                                finalItems = parseJumboJSON(myFiveDiv);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+
+            }
+        });
+        const answer = {
+            url,
+            products: finalItems
+        }
+        return answer;
+    } catch (error) {
+        return {};
+    }
+}
+
+const parseJumboJSON = (data) => {
+    const jsonData = JSON.parse(data);
+    const itemsList = jsonData.itemListElement;
+
+    const items = [];
+    itemsList.forEach(itemElement => {
+        const itemName = itemElement.item.name;
+        const itemDesciption = itemElement.item.description;
+        const itemPrice = itemElement.item.offers.lowPrice;
+
+        const newItem = {
+            name: itemName,
+            description: itemDesciption,
+            price: itemPrice,
+        }
+        items.push(newItem);
+    });
+    return items;
+}
+
+module.exports = { parseJSON, parseJumbo }
