@@ -1,11 +1,11 @@
 const parser = require('./helpers/parser.js');
 
 const baseUrl = "https://super.walmart.com.mx";
-const urlToQuery = baseUrl + "/all-departments";
+const path = "/all-departments";
 
 
 async function runWalmartScrapping() {
-    const resultWalmart = await parser.parseWalmart(urlToQuery);
+    const resultWalmart = await parser.parseWalmart(baseUrl, path);
     console.log(resultWalmart);
 }
 

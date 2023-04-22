@@ -56,7 +56,8 @@ const getSubcategories = async(baseUrl, path) => {
     }
 }
 
-const parseWalmart = async (url) => {
+const parseWalmart = async (baseUrl, urlToQuery) => {
+    const url = baseUrl + urlToQuery;
     try {
         const response = await axios.get(url);
         const html = response.data;
