@@ -56,7 +56,24 @@ const getSubcategories = async(baseUrl, path) => {
     }
 }
 
-const parseJSON = async (baseUrl, data) => {
+const parseWalmart = async (url) => {
+    try {
+        const response = await axios.get(url);
+        const html = response.data;
+        const $ = cheerio.load(html);
+        const data = $('script#__NEXT_DATA__').html();
+        const jsonData = JSON.parse(data);
+        const jsonConfig = jsonData.props.pageProps.initialData.contentLayout.modules[0].configs;
+        const jsonCategories = jsonConfig.categories;
+        const answer = await parseWalmartJSON(baseUrl, jsonCategories);
+        return JSON.stringify(answer);
+    } catch (error) {
+        console.log(error);
+        return {};
+    }
+}
+
+const parseWalmartJSON = async (baseUrl, data) => {
     let myResponse = {};
     let finalCategories = [];
 
@@ -73,7 +90,7 @@ const parseJSON = async (baseUrl, data) => {
             const linkSubcategory = elementSubcategory.subCategoryLink;
             const subcategoryName = linkSubcategory.title;
             const subcategoryUrl = linkSubcategory.clickThrough.value;
-            const mySubcategories = await getSubcategories(baseUrl, subcategoryUrl);
+            // const mySubcategories = await getSubcategories(baseUrl, subcategoryUrl);
             let Subcategory = {
                 name: subcategoryName,
                 url: baseUrl + subcategoryUrl,
@@ -143,7 +160,7 @@ const parseJumbo = async(url) => {
             url,
             products: finalItems
         }
-        return answer;
+        return JSON.stringify(answer);
     } catch (error) {
         return {};
     }
@@ -169,4 +186,4 @@ const parseJumboJSON = (data) => {
     return items;
 }
 
-module.exports = { parseJSON, parseJumbo }
+module.exports = { parseWalmart, parseJumbo }
